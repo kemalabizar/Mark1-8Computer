@@ -58,8 +58,8 @@ ClockFreq is adjustable via high/low ticks or simulation speed setting.
 
 | **Memory Instruction** | &nbsp; |
 | ------------------ | ------ |
-| `LDA $XX,RR` | **Load** from address $XX to register RR |
-| `STA $XX,RR` | **Store** to  address $XX from register RR |
+| `LDA RR,$XX` | **Load** from address $XX to register RR |
+| `STA RR,$XX` | **Store** to  address $XX from register RR |
 | `MOV RA,RB` | **Move** from register RA to register RB |
 | `INB $XX` | **Input** to address $XX |
 | `OUT $XX` | **Output** from address $XX |
@@ -80,29 +80,6 @@ ClockFreq is adjustable via high/low ticks or simulation speed setting.
 Register encoding (`RR`, `RA`, `RB`) follows the register encoding rule on **Byte Layout Segment**.  
 Flag encoding (`FF`) follows the flag encoding rule on **Flag Layout & Encoding Segment**.  
 Data `YY` and address `$XX` is displayed in hexadecimal values.
-
-## Assembly Program Example
-Below is a Mark 1-8 program for counting Fibonacci numbers, titled `Fib.asm`  
-```
-00: DATA $F0,00    \\ A = 0
-02: DATA $F1,00    \\ X = 0
-04: DATA $F2,01    \\ Y = 1
-06: DATA $F3,C8    \\ Z = 200
-08: LDA $F0,AC
-0A: LDA $F1,RX
-0C: LDA $F2,RY
-0E: LDA $F3,RZ
-10: ADD RX,RY      \\ A = X + Y
-11: MOV RY,RX      \\ X = Y
-12: MOV AC,RY      \\ Y = A
-13: STA $F0,AC
-15: STA $F1,RX
-17: STA $F2,RY
-19: OUT $F1
-1B: CMP RZ,RX      \\ X ?= 200
-1C: JIF $10,A      \\ if X < 200, then return to A = X + Y
-1E: HLT            \\ if X > 200, then stop
-```
 
 ## Programming The Mark 1-8
 1. Download all the files in this directory, especially `Assembler.py`, and place the download in ```C:\``` directory. (Python won't work if it's placed in a directory other than ```C:\``` so beware!)
