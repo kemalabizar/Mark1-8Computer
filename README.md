@@ -5,6 +5,9 @@ My first successful attempt (out of dozens) in making a totally-working computer
 Version history  
 v1.0  : First working iteration, basic functionalities added, with I/O instruction hardware unbuilt.
 
+## Circuit Diagram
+![Mark1Computer_DieShot](https://github.com/user-attachments/assets/b61b36f0-7143-4722-a092-4e105b5626c1)
+
 ## Register Layout
 
 **General-Purpose Registers**
@@ -28,7 +31,7 @@ v1.0  : First working iteration, basic functionalities added, with I/O instructi
 | O<sub>7</sub> | O<sub>6</sub> | O<sub>5</sub> | O<sub>4</sub> | O<sub>3</sub> | O<sub>2</sub> | O<sub>1</sub> | O<sub>0</sub> |
 | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
 
-**Operand Byte H**  
+**Operand Byte H (Serves as Address Pointer)**  
 | H<sub>7</sub> | H<sub>6</sub> | H<sub>5</sub> | H<sub>4</sub> | H<sub>3</sub> | H<sub>2</sub> | H<sub>1</sub> | H<sub>0</sub> |
 | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- | ------------- |
 
@@ -36,7 +39,7 @@ v1.0  : First working iteration, basic functionalities added, with I/O instructi
 | O<sub>6</sub>-O<sub>4</sub> | --> | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
 | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ | ------ |
 | **O<sub>7</sub>** | **0** | LDA | STA | MOV | INB | OUT | JMP | JIF | HLT |
-| **O<sub>7</sub>** | **1** | ADD | SUB | CMP | AND | OR | XOR | INV | &nbsp; |
+| **O<sub>7</sub>** | **1** | ADD | SUB | CMP | AND | OR | XOR | NOT | &nbsp; |
 
 **Register Encoding, 2-bit Pair (O<sub>3</sub>..O<sub>2</sub>, O<sub>1</sub>..O<sub>0</sub>)**
 | 00 | 01 | 10 | 11 |
@@ -49,4 +52,60 @@ v1.0  : First working iteration, basic functionalities added, with I/O instructi
 | **00** | **01** | **10** | **11** |
 | C | A | E | Z |
 
-## Instruction Set Architecture
+## Instruction Set
+All instructions listed below are executed in equal timespan of `ExecTime = 8/ClockFreq`.  
+ClockFreq is adjustable via high/low ticks or simulation speed setting.
+
+| **Memory Instruction** | &nbsp; |
+| ------------------ | ------ |
+| `LDA $XX,RR` | **Load** from address $XX to register RR |
+| `STA $XX,RR` | **Store** to  address $XX from register RR |
+| `MOV RA,RB` | **Move** from register RA to register RB |
+| `INB $XX` | **Input** to address $XX |
+| `OUT $XX` | **Output** from address $XX |
+| `JMP $XX` | **Jump** to instruction at address $XX |
+| `JIF $XX,FF` | **Jump If** flag FF valid to address $XX |
+| `HLT` | **Halt** and wait for CPU reset |
+| **Math Instruction** | &nbsp; |
+| `ADD RA,RB` | **Add** register RA with register RB |
+| `SUB RA,RB` | **Subtract** register RA by register RB |
+| `CMP RA,RB` | **Compare** register RA with register RB |
+| `AND RA,RB` | **Logical AND** register RA with register RB |
+| `OR RA,RB` | **Logical OR** register RA with register RB |
+| `XOR RA,RB` | **Logical XOR** register RA with register RB |
+| `NOT RA` | **Logical NOT** register RA |
+| **Data Instruction** | &nbsp; |
+| `DATA $XX,YY` | **Place Data** of YY to address $XX |
+
+Register encoding (`RR`, `RA`, `RB`) follows the register encoding rule on **Byte Layout Segment**.  
+Flag encoding (`FF`) follows the flag encoding rule on **Flag Layout & Encoding Segment**.  
+Data `YY` and address `$XX` is displayed in hexadecimal values.
+
+## Assembly Program Example
+Below is a Mark 1-8 program for counting Fibonacci numbers, titled `Fib.asm`  
+```
+00: DATA $F0,00    \\ A = 0
+02: DATA $F1,00    \\ X = 0
+04: DATA $F2,01    \\ Y = 1
+06: DATA $F3,C8    \\ Z = 200
+08: LDA $F0,AC
+0A: LDA $F1,RX
+0C: LDA $F2,RY
+0E: LDA $F3,RZ
+10: ADD RX,RY      \\ A = X + Y
+11: MOV RY,RX      \\ X = Y
+12: MOV AC,RY      \\ Y = A
+13: STA $F0,AC
+15: STA $F1,RX
+17: STA $F2,RY
+19: OUT $F1
+1B: CMP RZ,RX      \\ X ?= 200
+1C: JIF $10,A      \\ if X < 200, then return to A = X + Y
+1E: HLT            \\ if X > 200, then stop
+```
+
+## Programming The Mark 1-8
+1. Download all the files in this directory, especially `Assembler.py`, and place the download in ```C:\``` directory. (Python won't work if it's placed in a directory other than ```C:\``` so beware!)
+2. Write your assembly program per the instruction set above, and save it as `*name*.asm`, still in the directory.
+3. Open python from command prompt, then type `Python Assembler.py *name*.asm`, then wait until strings of hex numbers with `v3.0` header is printed on the terminal. Copy-paste it into a notepad, then save it as a plain file without any extension, e.g. `*name*`.
+4. Open the `Mark1Computer.circ` circuit, then on the RAM, right-click and select "Edit Contents", then select "Open". Select the `*name*` file, then `Ctrl`+`K` to run the clock, and _et voila_!
