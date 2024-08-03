@@ -75,11 +75,12 @@ ClockFreq is adjustable via high/low ticks or simulation speed setting.
 | `XOR RA,RB` | **Logical XOR** register RA with register RB |
 | `NOT RA` | **Logical NOT** register RA |
 | **Data Instruction** | &nbsp; |
-| `DATA $XX,YY` | **Place Data** of YY to address $XX |
+| `DATA YY,$XX` | **Place Data** of YY to address $XX |
 
-Register encoding (`RR`, `RA`, `RB`) follows the register encoding rule on **Byte Layout Segment**.  
-Flag encoding (`FF`) follows the flag encoding rule on **Flag Layout & Encoding Segment**.  
-Data `YY` and address `$XX` is displayed in hexadecimal values.
+Some important notes:  
+- Register encoding (`RR`, `RA`, `RB`) follows the register encoding rule on **Byte Layout Segment**.  
+- Flag encoding (`FF`) follows the flag encoding rule on **Flag Layout & Encoding Segment**.  
+- Data `YY` and address `$XX` is displayed in hexadecimal values.
 
 ## Programming The Mark 1-8
 1. Download all the files in this directory, especially `Assembler.py`, and place the download in ```C:\``` directory. (Python won't work if it's placed in a directory other than ```C:\``` so beware!)
