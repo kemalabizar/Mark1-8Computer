@@ -34,53 +34,58 @@ loops.remove("")
 print("\nv3.0 hex words addressed\n")
 #print(loops)
 
-#1st pass: labelize and calculate loop length into loopdict
-loopdict = {}
-looplen = 0
-loopsign = ""
+loop_len_dict = {}
+loop_loc_dict = {}
+#1st pass: labelize and calculate memory length of each inst. loops, categorize into a dict {"loopheader":int(memorysize)}
 for i in range(0, len(loops)):
     loops[i] = re.split("\n", loops[i])
-    sep = loops[i]
-    while "" in sep:
-        sep.remove("")
-    loops[i] = sep
-    m = 0
+    loop_len = 0
+    #print(loops[i], end="\n\n")
+    end = len(loops[i])-1
+    part = loops[i]
+    if part[end] == "":
+        part.pop()
+        loops[i] = part
+    else:
+        pass
     for j in range(1, len(loops[i])):
-        cont = re.split(" ", (loops[i])[j])
-        if cont[0] in ["LDA", "STA", "INB", "OUT", "JMP", "JIF", "DATA"]:
-            looplen += 2
+        loops[i][j] = re.split(" ", loops[i][j])
+        opcode = OPC.get(loops[i][j][0])
+        if (opcode != 0x2) and (opcode < 0x8) and (opcode != 0x7):
+            loop_len += 2
         else:
-            looplen += 1
-        #print(cont)
+            loop_len += 1
+        #print(loops[i][j], "\t", loop_len)
         j += 1
-    loopsign = loops[i][0]
-    loopdict[loopsign] = looplen
-    looplen = 0
+    loop_len_dict[loops[i][0]] = loop_len
     i += 1
-print(loopdict, end="\n\n")
+#print(loop_len_dict)
+loop_loc_dict[loops[0][0]] = 0x00
+for i in range(1, len(loops)):
+    pc += loop_len_dict.get(loops[i-1][0])
+    loop_loc_dict[loops[i][0]] = pc
+    i += 1
+print(loop_loc_dict); pc = 0x00
 
-inst_string = ""
-#2nd pass: decode and finalize instructions
+#2nd pass: re-read the whole loop, and generate proper bytes
 for i in range(0, len(loops)):
-    for j in range(1, len(loops[i])):
-        cont = re.split(" ", (loops[i])[j])
-        #print(cont)
-        indices = OPC.get(cont[0])
-        if (indices == 0x0) or (indices == 0x1):    # LDA, STA
-            operand = re.split(",", cont[1])
-            byte1 = indices*16 + REG.get(operand[0])*4
-            byte2 = int(operand[1][1:], base=16)
-            print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}"[2:], f"{byte2:#0{4}x}"[2:]); pc += 2
-        if (indices == 0x3) or (indices == 0x4): pass    # INB, OUT
-        if (indices == 0x5) or (indices == 0x6):    # JMP, JIF
-            operand = re.split(",", cont[1])
-            byte1 = indices*16
-            if len(operand) == 2:
-                byte1 = byte1 + FLAG.get(operand[1])*4
-            else: pass
-            byte2 = 
-            print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}"[2:], f"{byte2:#0{4}x}"[2:]); pc += 2
-        else: pass
+    for j in range(0, len(loops[i])):
+        opcode = OPC.get(loops[i][j][0])
+            if (opcode == 0x0) or (opcode == 0x1): #LDA, STA
+                operand = re.split(",", loops[i][j][1])
+                byte1 = opcode*16 + REG.get(operand[0])*4
+                byte2 = int(operand[1][1:], base=16)
+                print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}:"[2:], f"{byte2:#0{4}x}:"[2:]); pc += 2
+            if (opcode == 0x3) or (opcode == 0x4): #INB, OUT
+                print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}:"[2:], f"{byte2:#0{4}x}:"[2:]); pc += 2
+            if (opcode == 0x5): #JMP
+                print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}:"[2:], f"{byte2:#0{4}x}:"[2:]); pc += 2
+            if (opcode == 0x6): #JIF
+                print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}:"[2:], f"{byte2:#0{4}x}:"[2:]); pc += 2
+            if (opcode == 0x7): #HLT
+                print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}:"[2:]); pc += 1
+            if (opcode >= 0x8) and (opcode != 0xFF): #MATH
+                print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}:"[2:]); pc += 1
+            else: #DATA
         j += 1
-    print("\n")
     i += 1
