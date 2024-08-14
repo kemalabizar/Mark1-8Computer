@@ -81,9 +81,39 @@ Some important notes:
 - Register encoding (`RR`, `RA`, `RB`) follows the register encoding rule on **Byte Layout Segment**.  
 - Flag encoding (`FF`) follows the flag encoding rule on **Flag Layout & Encoding Segment**.  
 - Data `YY` and address `$XX` is displayed in hexadecimal values.
+- Per 2-pass assembler v1.0, ```JMP``` and ```JIF``` can only be used with loop labels ```:LOOPLABEL```, further explanation is provided in **Assembly Program Example**.
 
 ## Programming The Mark 1-8
 1. Download all the files in this directory, especially `Assembler.py`, and place the download in ```C:\``` directory. (Python won't work if it's placed in a directory other than ```C:\``` so beware!)
 2. Write your assembly program per the instruction set above, and save it as `*name*.asm`, still in the directory.
 3. Open python from command prompt, then type `Python Assembler.py *name*.asm`, then wait until strings of hex numbers with `v3.0` header is printed on the terminal. Copy-paste it into a notepad, then save it as a plain file without any extension, e.g. `*name*`.
 4. Open the `Mark1Computer.circ` circuit, then on the RAM, right-click and select "Edit Contents", then select "Open". Select the `*name*` file, then `Ctrl`+`K` to run the clock, and _et voila_!
+
+## Assembly Program Example
+This program can be assembled using the ```Assembler_2pass.py``` program, **not** the ```Assembler.py```. 
+Per 2-pass assembler v1.1, the assembler can ignore comments.
+```
+:INITIALIZE
+LDA AC,$A0      //AC = 0
+LDA RX,$A1      //RX = 0
+LDA RY,$A2      //RY = 1
+LDA RZ,$A3      //RZ = 224
+:ADDITION
+STA RX,$A1     //Stores result of RX into respective memory location
+OUT $A1        //Outputs RX
+ADD RX,RY      //AC = RX + RY
+MOV RY,RX      //RX = RY
+MOV AC,RY      //RY = AC
+CMP RX,RZ      //Compares RX against RZ (fixed value, RZ = 224)
+JIF ENDLOOP,A  //Jumps to ENDLOOP if RX > RZ
+JMP ADDITION   //Jumps back to ADDITION when previous JIF is not fulfilled
+:ENDLOOP
+OUT $AF        //Outputs data at $AF (indicates as finish signal)
+HLT            //Halts
+:VARIABLES
+DATA 00,$A0    //A = 0
+DATA 00,$A1    //X = 0
+DATA 01,$A2    //Y = 1
+DATA E0,$A3    //Z = 224
+DATA AA,$AF    //Message to be displayed. M = 170
+```
