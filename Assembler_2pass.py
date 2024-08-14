@@ -8,10 +8,6 @@ REG = {
     "AC":0x0, "RX":0x1, "RY":0x2, "RZ":0x3}
 FLAG = {
     "C":0x0, "A":0x1, "E":0x2, "Z":0x3}
-MEMLENGTH = {
-    "LDA":2, "STA":2, "MOV":1, "INB":2, "OUT":2, "JMP":2, "JIF":2, "HLT":1,
-    "ADD":1, "SUB":1, "CMP":1, "AND":1, "OR":1, "XOR":1, "NOT":1, "RND":1}
-
 pc = 0x00
 
 #2-pass system
@@ -34,9 +30,9 @@ loops.remove("")
 print("\nv3.0 hex words addressed\n")
 #print(loops)
 
+#1st pass: labelize and calculate memory length of each inst. loops, categorize into a dict {"loopheader":int(memorysize)}
 loop_len_dict = {}
 loop_loc_dict = {}
-#1st pass: labelize and calculate memory length of each inst. loops, categorize into a dict {"loopheader":int(memorysize)}
 for i in range(0, len(loops)):
     loops[i] = re.split("\n", loops[i])
     loop_len = 0
@@ -51,7 +47,7 @@ for i in range(0, len(loops)):
     for j in range(1, len(loops[i])):
         loops[i][j] = re.split(" ", loops[i][j])
         opcode = OPC.get(loops[i][j][0])
-        if (opcode != 0x2) and (opcode < 0x8) and (opcode != 0x7):
+        if ((opcode in range(0, 7)) and (opcode != 0x2)) or (opcode == 0xFF):
             loop_len += 2
         else:
             loop_len += 1
@@ -65,27 +61,52 @@ for i in range(1, len(loops)):
     pc += loop_len_dict.get(loops[i-1][0])
     loop_loc_dict[loops[i][0]] = pc
     i += 1
-print(loop_loc_dict); pc = 0x00
+#print(loop_loc_dict, end="\n\n")
+pc = 0x00
 
 #2nd pass: re-read the whole loop, and generate proper bytes
 for i in range(0, len(loops)):
-    for j in range(0, len(loops[i])):
+    #print(loops[i][0])
+    for j in range(1, len(loops[i])):
         opcode = OPC.get(loops[i][j][0])
-            if (opcode == 0x0) or (opcode == 0x1): #LDA, STA
-                operand = re.split(",", loops[i][j][1])
-                byte1 = opcode*16 + REG.get(operand[0])*4
-                byte2 = int(operand[1][1:], base=16)
-                print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}:"[2:], f"{byte2:#0{4}x}:"[2:]); pc += 2
-            if (opcode == 0x3) or (opcode == 0x4): #INB, OUT
-                print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}:"[2:], f"{byte2:#0{4}x}:"[2:]); pc += 2
-            if (opcode == 0x5): #JMP
-                print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}:"[2:], f"{byte2:#0{4}x}:"[2:]); pc += 2
-            if (opcode == 0x6): #JIF
-                print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}:"[2:], f"{byte2:#0{4}x}:"[2:]); pc += 2
-            if (opcode == 0x7): #HLT
-                print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}:"[2:]); pc += 1
-            if (opcode >= 0x8) and (opcode != 0xFF): #MATH
-                print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}:"[2:]); pc += 1
-            else: #DATA
+        if len(loops[i][j]) == 2: operand = re.split(",", loops[i][j][1])
+        else: pass
+        """
+        if len(loops[i][j]) == 2:
+            print(loops[i][j][0], f"{opcode:#0{4}x}"[2:], loops[i][j][1])
+        else:
+            print(loops[i][j][0], f"{opcode:#0{4}x}"[2:])
+        """
+        #
+        #
+        if (opcode == 0x0) or (opcode == 0x1): #LDA, STA
+            reg = REG.get(operand[0])
+            byte1 = opcode*16 + reg*4
+            byte2 = int(operand[1][1:], base=16)
+            print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}"[2:], f"{byte2:#0{4}x}"[2:]); pc += 2
+        if (opcode == 0x2) or ((opcode >= 0x8) and (opcode != 0xFF)): #MOV, MATH
+            reg1, reg2 = REG.get(operand[0]), REG.get(operand[1])
+            byte1 = opcode*16 + reg1*4 + reg2*1
+            print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}"[2:]); pc += 1
+        if (opcode == 0x3) or (opcode == 0x4):  #INB, OUT
+            byte1 = opcode*16
+            byte2 = int(operand[0][1:], base=16)
+            print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}"[2:], f"{byte2:#0{4}x}"[2:]); pc += 2
+        if (opcode == 0x5) or (opcode == 0x6):  #JMP, JIF
+            byte1 = opcode*16
+            if (opcode == 0x6): #JIF flag calculation
+                flag = FLAG.get(operand[1])
+                byte1 += (flag*4)
+            else: pass
+            byte2 = loop_loc_dict.get(operand[0])
+            print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}"[2:], f"{byte2:#0{4}x}"[2:]); pc += 2
+        if (opcode == 0x7): #HLT
+            byte1 = opcode*16
+            print(f"{pc:#0{4}x}:"[2:], f"{byte1:#0{4}x}"[2:]); pc += 1
+        if (opcode == 0xFF):    #DATA
+            dataValue = int(operand[0], base=16)
+            dataAddr = int(operand[1][1:], base=16)
+            print(f"{dataAddr:#0{4}x}:"[2:], f"{dataValue:#0{4}x}"[2:])
+        else: pass
         j += 1
     i += 1
